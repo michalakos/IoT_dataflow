@@ -8,3 +8,11 @@ Technologies used:
 * Apache Flink
 * HBase
 * Grafana
+
+## Requirements
+* docker
+* docker-compose
+* kafka-python
+
+## Instructions
+Execute **run.sh** to launch a kafka message broker via docker and create a topic for each of the sensors. To stop the sensors and the docker containers use ^c.
