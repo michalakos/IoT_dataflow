@@ -2,15 +2,14 @@
 
 # send random data from "sensors" to kafka
 
-from time import sleep 
-from time import time
+from time import sleep, time
 from json import dumps
-from random import gauss
+from random import gauss, randint
 from kafka import KafkaProducer
 import sys
 
 # TODO: change interval to 15 min
-INTERVAL = 1
+INTERVAL = 5
 # TODO: send random non serial data
 # TODO: increase number of sensors (run.sh and docker-compose.yml)
 
@@ -36,7 +35,12 @@ while True:
     val = gauss(10,3)
     print("Sending value: {}".format(val))
 
-    data = {'timestamp': time(), 'measurement': val}
-    print(data)
+    # one in 30 data is previous day's
+    timestamp = time()
+    rint = randint(1,30)
+    if rint == 1:
+        timestamp -= 86400
+
+    data = {'timestamp': timestamp, 'measurement': val}
     producer.send('sensor-{}'.format(sensor_id), value=data)
     sleep(INTERVAL)
