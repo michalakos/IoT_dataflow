@@ -2,16 +2,16 @@
 
 # send random data from "sensors" to kafka
 
+from encodings import utf_8
 from time import sleep, time
-from json import dumps
+# from json import dumps
 from random import gauss, randint
 from kafka import KafkaProducer
 import sys
 
 # TODO: change interval to 15 min
-INTERVAL = 5
-# TODO: send random non serial data
-# TODO: increase number of sensors (run.sh and docker-compose.yml)
+INTERVAL = 2
+# TODO: increase number of sensors (run.sh)
 
 # sensor-id must be provided
 # should be unique for every sensor
@@ -19,28 +19,42 @@ if len(sys.argv) != 2:
     print("Usage: ./sensor.py sensor-id")
     quit()
 
+# time_of_start = time()
+
 # get sensor-id
 sensor_id = sys.argv[1]
-print("Starting sensor {}".format(sensor_id))
+print("Starting sensor-{}".format(sensor_id))
 
 # # create kafka producer
 producer = KafkaProducer(
     bootstrap_servers = ['localhost:9092'],
-    value_serializer = lambda x: dumps(x).encode('utf-8')
+    value_serializer = str.encode
 )
+
+late = False
 
 # continuously send data
 while True:
     # random numerical data to send to kafka
     val = gauss(10,3)
-    print("Sending value: {}".format(val))
 
     # one in 30 data is previous day's
+
     timestamp = time()
+
     rint = randint(1,30)
     if rint == 1:
+        late = True
         timestamp -= 86400
+    else:
+        late = False
 
-    data = {'timestamp': timestamp, 'measurement': val}
-    producer.send('sensor-{}'.format(sensor_id), value=data)
+    # send data of type 'sensor_{sensor_id}-timestamp-value' from each
+    # sensor to the same topic
+    data = 'sensor_{}|{}|{}'.format(sensor_id, int(timestamp), val)
+
+    printed_data = data + "\t(Late!)" if late else data
+    print(printed_data)
+
+    producer.send('sensor_data', value=data)
     sleep(INTERVAL)
