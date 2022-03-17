@@ -4,14 +4,13 @@
 
 from encodings import utf_8
 from time import sleep, time
-# from json import dumps
 from random import gauss, randint
 from kafka import KafkaProducer
 import sys
 
 # TODO: change interval to 15 min
-INTERVAL = 2
 # TODO: increase number of sensors (run.sh)
+INTERVAL = 2
 
 # sensor-id must be provided
 # should be unique for every sensor
@@ -25,7 +24,7 @@ if len(sys.argv) != 2:
 sensor_id = sys.argv[1]
 print("Starting sensor-{}".format(sensor_id))
 
-# # create kafka producer
+# create kafka producer
 producer = KafkaProducer(
     bootstrap_servers = ['localhost:9092'],
     value_serializer = str.encode
@@ -38,10 +37,10 @@ while True:
     # random numerical data to send to kafka
     val = gauss(10,3)
 
-    # one in 30 data is previous day's
-
+    # current time as timestamp
     timestamp = time()
 
+    # one in 30 data is previous day's
     rint = randint(1,30)
     if rint == 1:
         late = True
@@ -49,8 +48,7 @@ while True:
     else:
         late = False
 
-    # send data of type 'sensor_{sensor_id}-timestamp-value' from each
-    # sensor to the same topic
+    # send data of type 'sensor_{sensor_id}|timestamp|value' from each sensor
     data = 'sensor_{}|{}|{}'.format(sensor_id, int(timestamp), val)
 
     printed_data = data + "\t(Late!)" if late else data

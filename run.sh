@@ -3,11 +3,16 @@
 # script used to start kafka broker 
 # and sensors
 
+cd quickstart
+mvn clean package
+
 cleanup() {
     docker-compose down;
     kill 0;
     exit
 }
+
+cd ..
 
 trap cleanup INT
 

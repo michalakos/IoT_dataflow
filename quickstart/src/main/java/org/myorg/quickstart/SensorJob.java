@@ -5,6 +5,9 @@ import org.apache.flink.api.common.functions.AggregateFunction;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.serialization.SimpleStringSchema;
+import org.apache.flink.connector.base.DeliveryGuarantee;
+import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
+import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.streaming.api.datastream.*;
@@ -17,32 +20,95 @@ import org.apache.flink.util.OutputTag;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple2;
 import java.time.Duration;
-import java.util.Properties;
+
+// Web UI available at localhost:8081
+// TODO: set interval
 
 public class SensorJob {
-    final static int INTERVAL = 5;
+    final static int INTERVAL = 10;
+    final static String bootstrap_server = "localhost:9092";
 
     public static void main(String[] args) throws Exception {
-        Properties props = new Properties();
-        props.setProperty("bootstrap.servers", "localhost:9092");
+
+
+        // create kafka source by connecting to kafka
         KafkaSource<String> source = KafkaSource.<String>builder()
-                .setBootstrapServers("localhost:9092")
+                .setBootstrapServers(bootstrap_server)
                 .setTopics("sensor_data")
                 .setStartingOffsets(OffsetsInitializer.earliest())
                 .setValueOnlyDeserializer(new SimpleStringSchema())
                 .build();
 
+        // create environment
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
+        // create data stream from kafka source
+        // values from source are of type:
+        // sensor_id(String)|timestamp(Long)|value(Double)
         DataStream<String> stream = env.fromSource(
                 source,
                 WatermarkStrategy.noWatermarks(),
                 "Kafka"
         );
 
+        // kafka sinks receive a string of data created as:
+        // sensor_id(String),value(Double)
+        // create kafka sink for max values
+        KafkaSink<String> maxSink = KafkaSink.<String>builder()
+                .setBootstrapServers(bootstrap_server)
+                .setRecordSerializer(KafkaRecordSerializationSchema.builder()
+                        .setTopic("max")
+                        .setValueSerializationSchema(new SimpleStringSchema())
+                        .build())
+                .setDeliverGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)
+                .build();
+
+        // create kafka sink for min values
+        KafkaSink<String> minSink = KafkaSink.<String>builder()
+                .setBootstrapServers(bootstrap_server)
+                .setRecordSerializer(KafkaRecordSerializationSchema.builder()
+                        .setTopic("min")
+                        .setValueSerializationSchema(new SimpleStringSchema())
+                        .build())
+                .setDeliverGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)
+                .build();
+
+        // create kafka sink for sum of values
+        KafkaSink<String> sumSink = KafkaSink.<String>builder()
+                .setBootstrapServers(bootstrap_server)
+                .setRecordSerializer(KafkaRecordSerializationSchema.builder()
+                        .setTopic("sum")
+                        .setValueSerializationSchema(new SimpleStringSchema())
+                        .build())
+                .setDeliverGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)
+                .build();
+
+        // create kafka sink for average of values
+        KafkaSink<String> avgSink = KafkaSink.<String>builder()
+                .setBootstrapServers(bootstrap_server)
+                .setRecordSerializer(KafkaRecordSerializationSchema.builder()
+                        .setTopic("avg")
+                        .setValueSerializationSchema(new SimpleStringSchema())
+                        .build())
+                .setDeliverGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)
+                .build();
+
+        // create kafka sink for late events
+        KafkaSink<String> lateSink = KafkaSink.<String>builder()
+                .setBootstrapServers(bootstrap_server)
+                .setRecordSerializer(KafkaRecordSerializationSchema.builder()
+                        .setTopic("late")
+                        .setValueSerializationSchema(new SimpleStringSchema())
+                        .build())
+                .setDeliverGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)
+                .build();
+
+
+        // create output tag for late events
         final OutputTag<Tuple3<String, Long, Double>> lateOutputTag =
                 new OutputTag<Tuple3<String, Long, Double>>("late-data"){};
 
+        // detect late events
         SingleOutputStreamOperator<Tuple3<String, Long, Double>> getLateEvents = stream
                 .flatMap(new Splitter())
                 .assignTimestampsAndWatermarks(
@@ -56,52 +122,63 @@ public class SensorJob {
                 .sideOutputLateData(lateOutputTag)
                 .maxBy(2);
 
+        // assign timestamps and watermark strategy (timestamp - second value of tuple)
+        // assign key (sensor_id - first value of tuple)
+        // create tumbling windows based on event time
         WindowedStream<Tuple3<String, Long, Double>, String, TimeWindow> initialStream = stream
                 .flatMap(new Splitter())
                 .assignTimestampsAndWatermarks(
                         WatermarkStrategy.
                                 <Tuple3<String, Long, Double>>forBoundedOutOfOrderness(Duration.ofSeconds(0))
+                                // timestamp by default is milliseconds, value in tuple is in seconds
+                                // multiply by 1000 to align
                                 .withTimestampAssigner((event,timestamp)->event.f1*1000)
                 )
                 .keyBy(event->event.f0)
                 .window(TumblingEventTimeWindows.of(Time.seconds(INTERVAL)))
                 .allowedLateness(Time.seconds(0));
 
-        DataStreamSink<String> maxStream = initialStream
+        // get max value and push to sink
+        initialStream
                 .maxBy(2)
                 .map((MapFunction<Tuple3<String, Long, Double>, String>)
-                        value -> "Max: "+value)
-                .print();
+                        value -> value.f0 + "," + value.f2)
+                .sinkTo(maxSink);
 
-        DataStreamSink<String> minStream = initialStream
+        // get min value and push to sink
+        initialStream
                 .minBy(2)
                 .map((MapFunction<Tuple3<String, Long, Double>, String>)
-                        value -> "Min: "+value)
-                .print();
+                        value -> value.f0 + "," + value.f2)
+                .sinkTo(minSink);
 
-        DataStreamSink<String> sumStream = initialStream
+        // get sum of values and push to sink
+        initialStream
                 .sum(2)
                 .map((MapFunction<Tuple3<String, Long, Double>, String>)
-                        value -> "Sum: "+value)
-                .print();
+                        value -> value.f0 + "," + value.f2)
+                .sinkTo(sumSink);
 
-        DataStreamSink<String> avgStream = initialStream
+        // get average of values and push to sink
+        initialStream
                 .aggregate(new AverageAggregate())
-                .map((MapFunction<Tuple2<String, Double>, String>) value -> "Average:"+value)
-                .print();
+                .map((MapFunction<Tuple2<String, Double>, String>) Tuple2::toString)
+                .sinkTo(avgSink);
 
-        DataStreamSink<String> lateStream = getLateEvents
+        // handle late events and push to sink
+        getLateEvents
                 .getSideOutput(lateOutputTag)
-                        .map((MapFunction<Tuple3<String, Long, Double>, String>)
-                                value -> "Late event: "+value)
-                                .print();
+                .map((MapFunction<Tuple3<String, Long, Double>, String>)
+                        value -> value.f0 + "," + value.f2)
+                .sinkTo(lateSink);
 
         env.execute();
     }
 
+    // class to split strings into values
     public static class Splitter implements FlatMapFunction<String, Tuple3<String, Long, Double>> {
         @Override
-        public void flatMap(String sentence, Collector<Tuple3<String, Long, Double>> out) throws Exception {
+        public void flatMap(String sentence, Collector<Tuple3<String, Long, Double>> out) {
             String[] parsed = sentence.split("\\|");
 
             String sensor = parsed[0];
@@ -114,6 +191,7 @@ public class SensorJob {
         }
     }
 
+    // class to average events
     public static class AverageAggregate
     implements AggregateFunction<Tuple3<String, Long, Double>, Tuple3<String, Long, Double>, Tuple2<String, Double>> {
         @Override

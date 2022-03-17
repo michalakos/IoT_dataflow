@@ -9,14 +9,24 @@ Technologies used:
 * HBase
 * Grafana
 
+Languages:
+* Python
+* Java
+
 ## Requirements
 Linux packages:
+* python3
 * docker
 * docker-compose
+* Apache Maven 3.6.3
+* Apache Flink 1.14.3
 
 Python packages:
 * kafka-python
-* apache-flink
+
 
 ## Instructions
-Execute **run.sh** to launch a kafka message broker via docker and create a topic for each of the sensors. To stop the sensors and the docker containers use ^c.
+* Execute **run.sh** to launch a kafka message broker via docker and create a topic for each of the sensors. To stop the sensors and the docker containers use ^c.<br>
+* Start a flink cluster by executing bin/start-cluster.sh from flink's directory.
+* Submit the job's jar file as such:
+`bin/flink run path/to/job/jar`
