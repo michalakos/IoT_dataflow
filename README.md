@@ -14,19 +14,22 @@ Languages:
 * Java
 
 ## Requirements
-Linux packages:
-* python3
-* docker
-* docker-compose
+* Python 3.9.7
+* openjdk 1.8.0_312
+* javac 1.8.0_312
+* Docker 20.10.13
+* docker-compose 1.29.2
 * Apache Maven 3.6.3
 * Apache Flink 1.14.3
+* Apache HBase 2.4.10
 
 Python packages:
 * kafka-python
+* happybase
+* flask
 
 
 ## Instructions
-* Execute **run.sh** to launch a kafka message broker via docker and create a topic for each of the sensors. To stop the sensors and the docker containers use ^c.<br>
-* Start a flink cluster by executing bin/start-cluster.sh from flink's directory.
-* Submit the job's jar file as such:
-`bin/flink run path/to/job/jar`
+* Change **HBASE_DIR** in `run.sh` to HBase installation path.
+* Change **FLINK_DIR** in `run.sh` to Flink installation path.
+* Execute `run.sh` from project's directory.

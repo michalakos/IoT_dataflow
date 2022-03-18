@@ -142,34 +142,35 @@ public class SensorJob {
         initialStream
                 .maxBy(2)
                 .map((MapFunction<Tuple3<String, Long, Double>, String>)
-                        value -> value.f0 + "," + value.f2)
+                        value -> value.f0 + "," + value.f1 + "," + value.f2)
                 .sinkTo(maxSink);
 
         // get min value and push to sink
         initialStream
                 .minBy(2)
                 .map((MapFunction<Tuple3<String, Long, Double>, String>)
-                        value -> value.f0 + "," + value.f2)
+                        value -> value.f0 + "," + value.f1 + "," + value.f2)
                 .sinkTo(minSink);
 
         // get sum of values and push to sink
         initialStream
                 .sum(2)
                 .map((MapFunction<Tuple3<String, Long, Double>, String>)
-                        value -> value.f0 + "," + value.f2)
+                        value -> value.f0 + "," + (System.currentTimeMillis()/1000) + "," + value.f2)
                 .sinkTo(sumSink);
 
         // get average of values and push to sink
         initialStream
                 .aggregate(new AverageAggregate())
-                .map((MapFunction<Tuple2<String, Double>, String>) Tuple2::toString)
+                .map((MapFunction<Tuple2<String, Double>, String>)
+                        value -> value.f0  + "," + (System.currentTimeMillis()/1000) + "," + value.f1)//Tuple2::toString)
                 .sinkTo(avgSink);
 
         // handle late events and push to sink
         getLateEvents
                 .getSideOutput(lateOutputTag)
                 .map((MapFunction<Tuple3<String, Long, Double>, String>)
-                        value -> value.f0 + "," + value.f2)
+                        value -> value.f0 + "," + value.f1 + "," + value.f2)
                 .sinkTo(lateSink);
 
         env.execute();
