@@ -12,6 +12,7 @@ Technologies used:
 Languages:
 * Python
 * Java
+* Bash
 
 ## Requirements
 * Python 3.9.7
