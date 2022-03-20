@@ -23,6 +23,8 @@ Languages:
 * Apache Maven 3.6.3
 * Apache Flink 1.14.3
 * Apache HBase 2.4.10
+* Grafana 8.4.4
+* [Grafana JSON API](https://marcus.se.net/grafana-json-datasource/) 
 
 Python packages:
 * kafka-python
@@ -34,3 +36,10 @@ Python packages:
 * Change **HBASE_DIR** in `run.sh` to HBase installation path.
 * Change **FLINK_DIR** in `run.sh` to Flink installation path.
 * Execute `run.sh` from project's directory.
+* Execute `sudo /bin/systemctl start grafana-server` on the command line to start Grafana's server.
+* Go to `localhost:3000` on your browser.
+* Select `Import`
+* Select `Upload a JSON file`.
+* Find and select `grafana-dashboard.json` from this project.
+* On the last field select `sensor_data`.
+* Import.

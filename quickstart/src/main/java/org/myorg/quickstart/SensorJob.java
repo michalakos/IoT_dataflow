@@ -25,7 +25,9 @@ import java.time.Duration;
 // TODO: set interval
 
 public class SensorJob {
-    final static int INTERVAL = 10;
+    // interval is the seconds between each aggregation
+    // the desired interval is one day
+    final static int INTERVAL = 1*24*60*60;
     final static String bootstrap_server = "localhost:9092";
 
     public static void main(String[] args) throws Exception {

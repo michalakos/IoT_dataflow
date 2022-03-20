@@ -4,12 +4,14 @@
 import happybase
 from datetime import datetime
 
-HBASE_SERVER = 'localhost'
-HBASE_PORT = 9090
-
 
 # connect to HBase's thrift api
-conn = happybase.Connection(HBASE_SERVER, HBASE_PORT)
+def connect_to_database():
+    HBASE_SERVER = 'localhost'
+    HBASE_PORT = 9090
+    conn = happybase.Connection(HBASE_SERVER, HBASE_PORT)
+    return conn
+
 
 # get all max values for a specific sensor
 # sensor_id: number of sensor (typically unsigned integer)
@@ -18,6 +20,8 @@ conn = happybase.Connection(HBASE_SERVER, HBASE_PORT)
 # "time":datetime,
 # "value":value}
 def get_max(sensor_id):
+    conn = connect_to_database()
+
     data = []
     try:
         table = conn.table('sensor_'+str(sensor_id)+'_max_values')
@@ -33,7 +37,8 @@ def get_max(sensor_id):
                 "time":str(datetime.fromtimestamp(int(key))),
                 "value":value
                 })
-    except:
+    except Exception as e: 
+        print(e)
         data = [{}]
 
     return(data)
@@ -45,6 +50,8 @@ def get_max(sensor_id):
 # "time":datetime,
 # "value":value}
 def get_min(sensor_id):
+    conn = connect_to_database()
+
     data = []
     try:
         table = conn.table('sensor_'+str(sensor_id)+'_min_values')
@@ -60,7 +67,8 @@ def get_min(sensor_id):
                 "time":str(datetime.fromtimestamp(int(key))),
                 "value":value
                 })
-    except:
+    except Exception as e: 
+        print(e)
         data = [{}]
 
     return(data)
@@ -72,6 +80,8 @@ def get_min(sensor_id):
 # "time":datetime,
 # "value":value}
 def get_avg(sensor_id):
+    conn = connect_to_database()
+
     data = []
     try:
         table = conn.table('sensor_'+str(sensor_id)+'_avg_values')
@@ -87,7 +97,8 @@ def get_avg(sensor_id):
                 "time":str(datetime.fromtimestamp(int(key))),
                 "value":value
                 })
-    except:
+    except Exception as e: 
+        print(e)
         data = [{}]
 
     return(data)
@@ -99,6 +110,8 @@ def get_avg(sensor_id):
 # "time":datetime,
 # "value":value}
 def get_sum(sensor_id):
+    conn = connect_to_database()
+
     data = []
     try:
         table = conn.table('sensor_'+str(sensor_id)+'_sum_values')
@@ -114,7 +127,8 @@ def get_sum(sensor_id):
                 "time":str(datetime.fromtimestamp(int(key))),
                 "value":value
                 })
-    except:
+    except Exception as e: 
+        print(e)
         data = [{}]
 
     return(data)
@@ -126,6 +140,8 @@ def get_sum(sensor_id):
 # "time":datetime,
 # "value":value}
 def get_late():
+    conn = connect_to_database()
+
     data = []
     try:
         table = conn.table('late_events')
@@ -142,7 +158,8 @@ def get_late():
                 "time":str(datetime.fromtimestamp(int(key))),
                 "value":value
                 })
-    except:
+    except Exception as e: 
+        print(e)
         data = [{}]
 
     return(data)

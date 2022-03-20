@@ -6,7 +6,6 @@ from kafka import KafkaConsumer
 import happybase
 import sys
 
-# TODO: remove prints
 KAFKA_BOOTSTRAP = 'localhost:9092'
 HBASE_SERVER = 'localhost'
 HBASE_PORT = 9090
@@ -29,18 +28,12 @@ min_consumer = KafkaConsumer(
 # connect to HBase's thrift api
 conn = happybase.Connection(HBASE_SERVER, HBASE_PORT)
 
-# create column families for HBase
-families = {
-    'cf' : dict(),
-}
-
 sensors = ["sensor_"+str(x+1) for x in range(int(SENSOR_COUNT))]
 tables = dict()
 
 # create table to store min values for each sensor
 # every row has the data's timestamp as a key and min_value as column
 for sensor in sensors:
-    conn.create_table(sensor+'_min_values', families)
     tables[sensor] = conn.table(sensor+'_min_values')
 
 # wait for Kafka data and store in Hbase
@@ -53,8 +46,6 @@ for message in min_consumer:
     value = parsed[2]
 
     table = tables[sensor]
-
-    print("Kafka data: sensor_id: ", sensor, " value: ", value, "\tat: ", time)
 
     # convert strings to bytes to insert in HBase
     row = ('cf:'+time).encode('utf-8')

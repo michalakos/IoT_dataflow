@@ -72,11 +72,13 @@ sleep 5
 
 echo "Starting database updates"
 cd $CUR_DIR
-./clean_hbase.py
+./clean_hbase.py 
+./create_tables.py $SENSORS
 ./max_update.py $SENSORS &
 ./min_update.py $SENSORS &
 ./avg_update.py $SENSORS &
 ./sum_update.py $SENSORS &
 ./late_events.py &
+./grafana_api.py &
 
 wait

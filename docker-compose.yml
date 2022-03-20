@@ -20,27 +20,3 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
-
-  # jobmanager:
-  #   image: flink:1.14.4-scala_2.11
-  #   ports:
-  #     - "8081:8081"
-  #   command: 'standalone-job --job-classname org.myorg.quickstart.SensorJob'
-  #   volumes:
-  #     - ./quickstart/target:/opt/flink/usrlib
-  #   environment:
-  #     - |
-  #       FLINK_PROPERTIES=
-  #       jobmanager.rpc.address: jobmanager
-
-  # taskmanager:
-  #   image: flink:1.14.4-scala_2.11
-  #   depends_on:
-  #     - jobmanager
-  #   command: taskmanager
-  #   volumes:
-  #     - ./quickstart/target:/opt/flink/usrlib
-  #   environment:
-  #     - |
-  #       FLINK_PROPERTIES=
-  #       jobmanager.rpc.address: jobmanager

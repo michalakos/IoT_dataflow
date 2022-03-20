@@ -2,15 +2,17 @@
 
 # send random data from "sensors" to kafka
 
+from cmath import log
 from encodings import utf_8
 from time import sleep, time
 from random import gauss, randint
 from kafka import KafkaProducer
 import sys
 
-# TODO: change interval to 15 min
-# TODO: increase number of sensors (run.sh)
-INTERVAL = 2
+# interval is the amount of seconds between each one of 
+# the sensor's readings 
+# the desired interval is 15 minutes
+INTERVAL = 15*60
 
 # sensor-id must be provided
 # should be unique for every sensor
@@ -50,9 +52,6 @@ while True:
 
     # send data of type 'sensor_{sensor_id}|timestamp|value' from each sensor
     data = 'sensor_{}|{}|{}'.format(sensor_id, int(timestamp), val)
-
-    printed_data = data + "\t(Late!)" if late else data
-    print(printed_data)
 
     producer.send('sensor_data', value=data)
     sleep(INTERVAL)
